@@ -57,6 +57,37 @@ app.get("/clientes/:id", async (req, res) => {
     }
 })
 
+app.post("/clientes", async (req, res) => {
+    const { nome, sobrenome, telefone, email } = req.body;
+
+    if (!nome || !sobrenome || !email) {
+        return res.status(400).json({
+            erro: "Nome, sobrenome e email são obrigatórios"
+        });
+    }
+
+    try {
+        const resultado = await db.query(
+            `INSERT INTO clientes (nome, sobrenome, telefone, email)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *`,
+            [nome, sobrenome, telefone, email]
+        );
+
+        res.status(201).json(resultado.rows[0]);
+    } catch (erro) {
+        if (erro.code === "23505") {
+            return res.status(409).json({
+                erro: "Email já cadastrado"
+            });
+        }
+
+        res.status(500).json({
+            erro: "Erro ao criar cliente"
+        });
+    }
+});
+
 app.listen(3003, () => {
     console.log("Clientes rodando na porta 3003");
 });
