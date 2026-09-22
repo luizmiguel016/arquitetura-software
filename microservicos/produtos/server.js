@@ -76,9 +76,9 @@ app.post("/produtos", async (req, res) => {
     try {
         const resultado = await db.query(
             `INSERT INTO produtos (nome, preco)
-       VALUES ($1, $2)
-       RETURNING *`,
-            [nome, preco]
+        VALUES ($1, $2)
+        RETURNING *`,
+        [nome, preco]
         );
 
         res.status(201).json(resultado.rows[0]);
