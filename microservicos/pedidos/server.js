@@ -72,11 +72,11 @@ app.get("/pedidos", async (req, res) => {
 });*/
 
 app.post("/pedidos", async (req, res) => {
-    const { produtoId, quantidade } = req.body;
+    const { produtoId, clienteId, quantidade } = req.body;
 
-    if (!produtoId || !quantidade || quantidade <= 0) {
+    if (!produtoId || !clienteId || !quantidade || quantidade <= 0) {
         return res.status(400).json({
-            erro: "produtoId e quantidade válida são obrigatórios"
+            erro: "produtoId, clienteId e quantidade válida são obrigatórios"
         });
     }
 
@@ -93,16 +93,18 @@ app.post("/pedidos", async (req, res) => {
 
         const resultado = await db.query(
             `INSERT INTO pedidos (
-        produto_id,
-        nome_produto,
-        preco_unitario,
-        quantidade,
-        total
-      )
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *`,
+                produto_id,
+                cliente_id,
+                nome_produto,
+                preco_unitario,
+                quantidade,
+                total
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *`,
             [
                 produto.id,
+                clienteId,
                 produto.nome,
                 produto.preco,
                 quantidade,
@@ -174,11 +176,17 @@ async function criarTabela() {
         CREATE TABLE IF NOT EXISTS pedidos (
         id SERIAL PRIMARY KEY,
         produto_id INTEGER NOT NULL,
+        cliente_id INTEGER NOT NULL,
         nome_produto VARCHAR(100) NOT NULL,
         preco_unitario NUMERIC(10, 2) NOT NULL,
         quantidade INTEGER NOT NULL,
         total NUMERIC(10, 2) NOT NULL
         )
+    `);
+
+    await db.query(`
+        ALTER TABLE pedidos
+        ADD COLUMN IF NOT EXISTS cliente_id INTEGER    
     `);
 
     console.log("Tabela de pedidos pronta");
