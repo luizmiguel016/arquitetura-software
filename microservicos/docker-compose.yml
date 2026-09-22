@@ -39,9 +39,11 @@ services:
     environment:
       PRODUTOS_URL: http://produtos:3001
       PEDIDOS_URL: http://pedidos:3002
+      CLIENTES_URL: http://clientes:3003
     depends_on:
       - produtos
       - pedidos
+      - clientes
 
   postgres:
     image: postgres:16-alpine
