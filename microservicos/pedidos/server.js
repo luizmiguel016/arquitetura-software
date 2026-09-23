@@ -7,13 +7,13 @@ const app = express();
 const PRODUTOS_URL =
     process.env.PRODUTOS_URL || "http://localhost:3001";
 
+const CLIENTES_URL =
+    process.env.CLIENTES_URL || "http://localhost:3003";
+
+
 app.use(express.json());
 
 const pedidos = [];
-
-/*app.get("/pedidos", (req, res) => {
-    res.json(pedidos);
-});*/
 
 app.get("/pedidos", async (req, res) => {
     try {
@@ -29,35 +29,26 @@ app.get("/pedidos", async (req, res) => {
     }
 });
 
-/*app.post("/pedidos", async (req, res) => {
-    const { produtoId, quantidade } = req.body;
+app.post("/pedidos", async (req, res) => {
+    const { produtoId, clienteId, quantidade } = req.body;
 
-    if (!produtoId || !quantidade || quantidade <= 0) {
+    if (!produtoId || !clienteId || !quantidade || quantidade <= 0) {
         return res.status(400).json({
-            erro: "produtoId e quantidade válida são obrigatórios"
+            erro: "produtoId, clienteId e quantidade válida são obrigatórios"
         });
     }
 
+    let produto;
+
     try {
-        const resposta = await axios.get(
+        const respostaProduto = await axios.get(
             `${PRODUTOS_URL}/produtos/${produtoId}`,
             {
                 timeout: 3000
             }
         );
 
-        const produto = resposta.data;
-
-        const pedido = {
-            id: pedidos.length + 1,
-            produto,
-            quantidade,
-            total: produto.preco * quantidade
-        };
-
-        pedidos.push(pedido);
-
-        res.status(201).json(pedido);
+        produto = respostaProduto.data;
     } catch (erro) {
         if (erro.response?.status === 404) {
             return res.status(400).json({
@@ -69,28 +60,29 @@ app.get("/pedidos", async (req, res) => {
             erro: "Serviço de Produtos indisponível"
         });
     }
-});*/
-
-app.post("/pedidos", async (req, res) => {
-    const { produtoId, clienteId, quantidade } = req.body;
-
-    if (!produtoId || !clienteId || !quantidade || quantidade <= 0) {
-        return res.status(400).json({
-            erro: "produtoId, clienteId e quantidade válida são obrigatórios"
-        });
-    }
 
     try {
-        const resposta = await axios.get(
-            `${PRODUTOS_URL}/produtos/${produtoId}`,
+        await axios.get(
+            `${CLIENTES_URL}/clientes/${clienteId}`,
             {
                 timeout: 3000
             }
         );
+    } catch (erro) {
+        if (erro.response?.status === 404) {
+            return res.status(400).json({
+                erro: "Cliente não encontrado"
+            });
+        }
 
-        const produto = resposta.data;
-        const total = produto.preco * quantidade;
+        return res.status(503).json({
+            erro: "Serviço de Clientes indispoível"
+        });
+    }
 
+    const total = produto.preco * quantidade;
+
+    try {
         const resultado = await db.query(
             `INSERT INTO pedidos (
                 produto_id,
@@ -114,37 +106,11 @@ app.post("/pedidos", async (req, res) => {
 
         res.status(201).json(resultado.rows[0]);
     } catch (erro) {
-        if (erro.response?.status === 404) {
-            return res.status(400).json({
-                erro: "Produto não encontrado"
-            });
-        }
-
-        if (erro.code === "ECONNREFUSED" || erro.code === "ECONNABORTED") {
-            return res.status(503).json({
-                erro: "Serviço de Produtos indisponível"
-            });
-        }
-
         return res.status(500).json({
             erro: "Erro ao criar pedido"
         });
     }
 });
-
-/*app.get("/pedidos/:id", (req, res) => {
-    const pedido = pedidos.find(
-        p => p.id === Number(req.params.id)
-    );
-
-    if (!pedido) {
-        return res.status(404).json({
-            erro: "Pedido não encontrado"
-        });
-    }
-
-    res.json(pedido);
-});*/
 
 app.get("/pedidos/:id", async (req, res) => {
     try {
